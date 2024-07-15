@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "906915379490",
+    "project_id": "nre-app-f0a73",
+    "storage_bucket": "nre-app-f0a73.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906915379490:android:b27f2accb2649181d74d7b",
+        "android_client_info": {
+          "package_name": "com.noahrealestateplc.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDNZaQHYt4O27UsMAsMoERxDcTr6iZCXI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
