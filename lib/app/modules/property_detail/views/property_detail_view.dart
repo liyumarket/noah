@@ -426,7 +426,7 @@ class HorizontalUnitListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(units);
+
 
     return units.isNotEmpty
         ? Column(
@@ -507,7 +507,7 @@ class TestimonialListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(testimonials);
+ 
 
     return testimonials.isNotEmpty
         ? Column(

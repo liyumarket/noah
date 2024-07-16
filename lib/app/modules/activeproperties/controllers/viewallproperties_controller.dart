@@ -25,7 +25,6 @@ class ActivepropertiesController extends GetxController {
         .where((element) => element.status!.contains(val))
         .toList();
     update();
-    // print(properties.length);
   }
 
   setProperties(List<Property> props) {

@@ -15,15 +15,14 @@ class PropertyDetailController extends GetxController {
     final RegExp latLongRegex = RegExp(r'!2d([\-0-9.]+)!3d([\-0-9.]+)');
     final match = latLongRegex.firstMatch(url);
 
-    print(url);
+
 
     if (match != null) {
       latitude = match.group(2)!;
       longitude = match.group(1)!;
-      print('Latitude: $latitude');
-      print('Longitude: $longitude');
+    
     } else {
-      print('No match found.');
+ 
     }
   }
 

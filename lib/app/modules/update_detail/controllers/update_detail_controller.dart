@@ -12,7 +12,6 @@ class UpdateDetailController extends GetxController {
 
   @override
   void onReady() {
- print( Get.arguments);
 
     super.onReady();
   }

@@ -11,7 +11,7 @@ class MapPageController extends GetxController {
   void extractLatLong(String url) {
     final RegExp latRegex = RegExp(r'!3d([0-9.]+)!2d([0-9.]+)');
     final match = latRegex.firstMatch(url);
-    print(match);
+
     if (match != null) {
       latitude.value = match.group(1)!;
       longitude.value = match.group(2)!;
