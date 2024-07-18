@@ -6,13 +6,14 @@ import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'package:get/get.dart';
+import 'package:noahrealstate/app/common/theme.dart';
 import 'package:noahrealstate/app/firebase_options.dart';
 import 'package:noahrealstate/app/modules/splash/views/splash_view.dart';
 
 import 'app/routes/app_pages.dart';
 
 Future<void> main() async {
-   WidgetsBinding widgetsBinding =WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
@@ -34,11 +35,14 @@ Future<void> main() async {
         debugShowCheckedModeBanner: false,
         title: "Noah",
         // initialRoute: AppPages.INITIAL,
-        home:  SplashView(),
+        home: SplashView(),
         getPages: AppPages.routes,
+        theme: customTheme,
       );
     },
     child: const SizedBox(),
   ));
   // FlutterNativeSplash.remove();
+  // Define your custom theme
+
 }
