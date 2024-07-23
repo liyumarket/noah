@@ -2,6 +2,7 @@ class ContactInfo {
   String? name;
   String? organization;
   String? designation;
+
   List<String>? emailList;
   List<String>? phoneNumbers;
 

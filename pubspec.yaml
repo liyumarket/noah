@@ -32,6 +32,9 @@ dependencies:
   mobile_number: ^2.1.1
   permission_handler: ^11.3.1
   contacts_service: ^0.6.3
+  simnumber: ^0.0.12
+  device_info_plus: ^10.1.0
+  device_imei: ^0.0.4+2
  
 
 dev_dependencies: 
