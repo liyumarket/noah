@@ -27,7 +27,7 @@ class AppDrawer extends StatelessWidget {
                     backgroundImage:
                         AssetImage('assets/images/noah-launcher.png')),
                 Text(
-                  'Noah Real Estates',
+                  'Noah Real Estate',
                   style: GoogleFonts.montserrat(
                     color: Colors.white,
                     fontSize: 24,

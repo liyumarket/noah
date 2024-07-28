@@ -5,7 +5,7 @@
 <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
 <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
     <application
-        android:label="noahrealstate"
+        android:label="Noah Real Estate"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity

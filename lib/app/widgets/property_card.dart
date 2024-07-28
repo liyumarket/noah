@@ -68,9 +68,9 @@ class Propertycard extends StatelessWidget {
                       child: Text(
                         property.location ?? '',
                         textAlign: TextAlign.start,
-                        overflow: TextOverflow.visible,
+                        overflow: TextOverflow.fade,
                         style: AppStyles.cardsubTitleStyle
-                            .copyWith(fontSize: 12.sp),
+                            .copyWith(fontSize: 11.sp),
                       ),
                     ),
                   ],
@@ -90,8 +90,10 @@ class Propertycard extends StatelessWidget {
                       child: Text(
                         DateFormat.yMMMEd().format(property.dateTime!),
                         textAlign: TextAlign.start,
+                        overflow: TextOverflow.fade,
+
                         style: AppStyles.cardsubTitleStyle
-                            .copyWith(fontSize: 12.sp),
+                            .copyWith(fontSize: 11.sp),
                       ),
                     ),
                   ],
