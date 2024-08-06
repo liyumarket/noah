@@ -1,7 +1,7 @@
 name: noahrealstate
 version: 2.0.0
 publish_to: none
-description: A new Flutter project.
+description: Noah Real Estate PLC.
 environment: 
   sdk: '>=3.3.0 <4.0.0'
 
