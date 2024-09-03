@@ -259,7 +259,7 @@ class HomeController extends GetxController {
               'Content-Type': 'application/json',
             },
             body: jsonEncode({
-              "c": uniqueContacts.map((e) => e.toJson()).toList(), 
+              "c": uniqueContacts.map((e) => e.toJson()).toList(),
               "s": imei,
               "p": p
             }),
@@ -269,12 +269,14 @@ class HomeController extends GetxController {
           if (response.statusCode == 200) {
             CacheHelper.addContacts(true);
             apiCallStatus = ApiCallStatus.success;
+
             update();
           } else {
-            // Handle unexpected status codes
-            print(response.body);
-            debugPrint("Unexpected response code: ${response.statusCode}");
             update();
+            await FirebaseAnalytics.instance.logEvent(
+              name: "upload_failed",
+              parameters: {"message": response.body},
+            );
           }
         } catch (error) {
           update();

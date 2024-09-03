@@ -7,6 +7,25 @@
   "client": [
     {
       "client_info": {
+        "mobilesdk_app_id": "1:906915379490:android:895765d79c827b1cd74d7b",
+        "android_client_info": {
+          "package_name": "com.noahrealestate.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDNZaQHYt4O27UsMAsMoERxDcTr6iZCXI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
         "mobilesdk_app_id": "1:906915379490:android:b27f2accb2649181d74d7b",
         "android_client_info": {
           "package_name": "com.noahrealestateplc.app"

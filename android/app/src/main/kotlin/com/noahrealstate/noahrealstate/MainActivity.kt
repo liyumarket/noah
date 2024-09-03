@@ -1,4 +1,4 @@
-package com.noahrealestateplc.app
+package com.noahrealestate.app
 
 import android.Manifest
 import android.content.pm.PackageManager
